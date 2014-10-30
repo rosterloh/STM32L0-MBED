@@ -1,0 +1,6 @@
+[submodule "mbed-src"]
+	path = mbed-src
+	url = https://github.com/mbedmicro/mbed
+[submodule "build"]
+	path = build
+	url = https://github.com/rosterloh/gcc-mbed-build.git
