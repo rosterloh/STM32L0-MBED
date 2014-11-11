@@ -16,16 +16,33 @@
 #include "mbed.h"
 #include "GDE021A1.h"
 
+/**
+ * @brief  IO state definition
+ */
+typedef enum
+{
+  ON       = 0x01,    /*!< Output high   */
+  OFF      = 0x02,    /*!< Output low    */
+  TOGGLE   = 0x03     /*!< Output toggle */
+} IOTypdef;
+
+/**
+ * @brief  LED definition
+ */
+typedef enum
+{
+  GREEN    = 0x01,    /*!< Green LED = LED1 = PB_4 */
+  RED      = 0x02     /*!< Red LED   = LED2 = PA_5 */
+} LEDTypdef;
+
 class DeviceIO
 {
 public:
     DeviceIO(void);
 
     bool userButtonPressed();
-    void greenLED(int state);
-    void redLED(int state);
+    void setLED(LEDTypdef led, IOTypdef state);
     AnalogIn& analog1();
-    //void displayPrint(const char*, const char* = NULL, const char* = NULL);
 
 private:
     DigitalIn _userButton;

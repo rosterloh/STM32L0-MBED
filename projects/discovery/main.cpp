@@ -11,16 +11,24 @@
  */
 
 #include "mbed.h"
-//#include "rtos.h"
-#include "DeviceInfo.h"
+#include "rtos.h"
+#include "DeviceIO.h"
+
+DeviceIO io;
+
+void led2_thread(void const *args) {
+  while (true) {
+    io.setLED(GREEN, TOGGLE);
+    Thread::wait(1000);
+  }
+}
 
 int main() {
-  led1 = 1; led2 = 1;
-  ticker.attach(&doTick, 2.0); // the address of the function to be attached (doTick) and the interval (2 seconds)
+  //DeviceIO io;
+  Thread thread(led2_thread);
 
-  // spin in a main loop. ticker will interrupt it to call doTick
   while(1) {
-    led2 = !led2;
-    wait(0.5);
+    io.setLED(RED, TOGGLE);
+    Thread::wait(500);
   }
 }

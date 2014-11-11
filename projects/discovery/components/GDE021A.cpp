@@ -11,21 +11,12 @@
  */
 
 #include "GDE021A1.h"
+#include "Font16.h"
 
 #define EPD_COLOR_BLACK         0x00
 #define EPD_COLOR_DARKGRAY      0x55
 #define EPD_COLOR_LIGHTGRAY     0xAA
 #define EPD_COLOR_WHITE         0xFF
-
-/**
-  * @brief  Line mode structures definition
-  */
-typedef enum
-{
-  CENTER_MODE             = 0x01,    /*!< Center mode */
-  RIGHT_MODE              = 0x02,    /*!< Right mode  */
-  LEFT_MODE               = 0x03     /*!< Left mode   */
-} Text_AlignModeTypdef;
 
 /* Look-up table for the epaper (90 bytes) */
 const unsigned char WF_LUT[]={
@@ -41,12 +32,6 @@ const unsigned char WF_LUT[]={
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
   0x41,0x45,0xF1,0xFF,0x5F,0x55,0x01,0x00,
   0x00,0x00,};
-
-/**
-  * @brief  GDE021A1 Size
-  */
-#define  GDE021A1_EPD_PIXEL_WIDTH    ((uint16_t)172)
-#define  GDE021A1_EPD_PIXEL_HEIGHT   ((uint16_t)18)
 
 /**
   * @brief  GDE021A1 Registers
@@ -90,12 +75,6 @@ const unsigned char WF_LUT[]={
 #define EPD_REG_240           0xF0   /* Booster Set Internal Feedback Selection */
 #define EPD_REG_255           0xFF   /* NOP */
 
-typedef struct _tFont
-{
-  const uint8_t *table;
-  uint16_t Width;
-  uint16_t Height;
-} sFONT;
 /*
 extern sFONT Font20;
 extern sFONT Font16;
@@ -121,7 +100,31 @@ GDE021A1::GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName
     _spi.format(8,3);        /** Setup the spi for 8 bit data, high steady state clock, second edge capture */
     _spi.frequency(4000000); /** 4MHz clock rate */
 
+    _font.table = Font16_Table;
+    _font.Width = 11;
+    _font.Height = 4;
+
     registers_init();
+}
+
+/**
+ * @brief  Get the width in pixels of the display.
+ * @param  None
+ * @retval width in pixels
+ */
+int GDE021A1::width()
+{
+    return 172;
+}
+
+/**
+ * @brief  Get the height in pixels of the display.
+ * @param  None
+ * @retval height in pixels
+ */
+int GDE021A1::height()
+{
+    return 16;
 }
 
 /**
@@ -139,6 +142,20 @@ void GDE021A1::cls()
     {
         write_pixel(EPD_COLOR_WHITE);
     }
+}
+
+/**
+  * @brief  Displays one character.
+  * @param  Xpos: start column address.
+  * @param  Ypos: the Line where to display the character shape.
+  * @param  Ascii: character ascii code, must be between 0x20 and 0x7E.
+  * @retval None
+  */
+void GDE021A1::displayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
+{
+  Ascii -= 32;
+
+  draw_char(Xpos, Ypos, &_font.table[Ascii * ((_font.Height) * (_font.Width))]);
 }
 
 /**
@@ -163,13 +180,13 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
     while (*ptr++) size++ ;
 
     /* Characters number per line */
-    xsize = (GDE021A1_EPD_PIXEL_WIDTH/pFont->Width);
+    xsize = (width()/_font.Width);
 
     switch (Mode)
     {
     case CENTER_MODE:
       {
-        refcolumn = Xpos + ((xsize - size)* pFont->Width) / 2;
+        refcolumn = Xpos + ((xsize - size)* _font.Width) / 2;
         break;
       }
     case LEFT_MODE:
@@ -179,7 +196,7 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
       }
     case RIGHT_MODE:
       {
-        refcolumn =  - Xpos + ((xsize - size)*pFont->Width);
+        refcolumn =  - Xpos + ((xsize - size)*_font.Width);
         break;
       }
     default:
@@ -190,10 +207,10 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
     }
 
     /** Send the string character by character on EPD */
-    while ((*Text != 0) & (((GDE021A1_EPD_PIXEL_WIDTH - (i*pFont->Width)) & 0xFFFF) >= pFont->Width))
+    while ((*Text != 0) & (((width() - (i*_font.Width)) & 0xFFFF) >= _font.Width))
     {
         displayChar(refcolumn, Ypos, *Text); /** Display one character on EPD */
-        refcolumn += pFont->Width;           /** Decrement the column position by 16 */
+        refcolumn += _font.Width;            /** Decrement the column position by 16 */
         Text++;                              /** Point on the next character */
         i++;
     }
@@ -212,7 +229,7 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
   */
 void GDE021A1::stringAtLine(uint16_t Line, uint8_t *ptr)
 {
-    stringAt(0, LINE(Line), ptr, LEFT_MODE);
+    //stringAt(0, LINE(Line), ptr, LEFT_MODE);
 }
 
 /**
@@ -309,7 +326,7 @@ void GDE021A1::drawImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t 
 
     draw_image(Xpos, Ypos, Xsize, Ysize, pdata);
 
-    set_display_window(0, 0, GDE021A1_EPD_PIXEL_WIDTH, GDE021A1_EPD_PIXEL_HEIGHT);
+    set_display_window(0, 0, width(), height());
 }
 
 /**
@@ -320,7 +337,7 @@ void GDE021A1::drawImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t 
 void GDE021A1::write_data( uint16_t RegValue )
 {
     _cs = 0;              /** Reset EPD control line CS */
-    _dc = 1;              /** Set EPD data/command line DC to High */
+    _cd = 1;              /** Set EPD data/command line DC to High */
     _spi.write(RegValue); /** Send Data */
     _cs = 1;              /** Deselect: Chip Select high */
 }
@@ -333,7 +350,7 @@ void GDE021A1::write_data( uint16_t RegValue )
 void GDE021A1::write_reg( uint8_t Reg )
 {
     _cs = 0;              /** Reset EPD control line CS */
-    _dc = 1;              /** Set EPD data/command line DC to Low */
+    _cd = 1;              /** Set EPD data/command line DC to Low */
     _spi.write(Reg);      /** Send Data */
     _cs = 1;              /** Deselect: Chip Select high */
 }
@@ -347,7 +364,7 @@ uint16_t GDE021A1::read_data( void )
 {
     _cs = 0;                /** Reset EPD control line CS */
     _cs = 1;                /** Deselect: Chip Select high */
-    return spi.write(0x00); /** Send Data */
+    return _spi.write(0x00); /** Send Data */
 }
 
 /**
@@ -621,4 +638,27 @@ void GDE021A1::draw_image(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t
         }
       }
     }
+}
+
+/**
+ * @brief  Draws a character on EPD.
+ * @param  Xpos: specifies the X position, can be a value from 0 to 171
+ * @param  Ypos: specifies the Y position, can be a value from 0 to 17
+ * @param  c: pointer to the character data
+ * @retval None
+ */
+void GDE021A1::draw_char(uint16_t Xpos, uint16_t Ypos, const uint8_t *c)
+{
+  uint32_t index = 0;
+  uint32_t data_length = 0;
+
+  /* Set the Character display window */
+  set_display_window(Xpos, Ypos, (Xpos + _font.Width - 1), (Ypos + _font.Height - 1));
+
+  data_length = (_font.Height * _font.Width);
+
+  for(index = 0; index < data_length; index++)
+  {
+    write_pixel(c[index]);
+  }
 }

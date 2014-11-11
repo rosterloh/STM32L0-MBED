@@ -27,6 +27,26 @@
 
 #include "mbed.h"
 
+/**
+  * @brief  Line mode structures definition
+  */
+typedef enum
+{
+  CENTER_MODE             = 0x01,    /*!< Center mode */
+  RIGHT_MODE              = 0x02,    /*!< Right mode  */
+  LEFT_MODE               = 0x03     /*!< Left mode   */
+} Text_AlignModeTypdef;
+
+/**
+  * @brief  Font type information definition
+  */
+typedef struct _tFont
+{
+  const uint8_t *table;
+  uint16_t Width;
+  uint16_t Height;
+} sFONT;
+
 class GDE021A1
 {
 public:
@@ -44,11 +64,34 @@ public:
     GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,  PinName cd, PinName busy, PinName pwr, PinName reset);
 
     /**
+     * @brief  Get the width in pixels of the display.
+     * @param  None
+     * @retval width in pixels
+     */
+    int width();
+
+    /**
+     * @brief  Get the height in pixels of the display.
+     * @param  None
+     * @retval height in pixels
+     */
+    int height();
+
+    /**
      * @brief  Clears the hole EPD.
      * @param  None
      * @retval None
      */
     void cls();
+
+    /**
+      * @brief  Displays one character.
+      * @param  Xpos: start column address.
+      * @param  Ypos: the Line where to display the character shape.
+      * @param  Ascii: character ascii code, must be between 0x20 and 0x7E.
+      * @retval None
+      */
+    void displayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii);
 
     /**
       * @brief  Displays characters on the EPD.
@@ -187,23 +230,32 @@ private:
     void refresh_display(void);
 
     /**
-      * @brief  Disables the clock and the charge pump.
-      * @param  None
-      * @retval None
-      */
+     * @brief  Disables the clock and the charge pump.
+     * @param  None
+     * @retval None
+     */
     void close_charge_pump(void);
 
     /**
-      * @brief  Displays picture..
-      * @param  pdata: picture address.
-      * @param  Xpos:  Image X position in the EPD
-      * @param  Ypos:  Image Y position in the EPD
-      * @param  Xsize: Image X size in the EPD
-      * @note   Xsize have to be a multiple of 4
-      * @param  Ysize: Image Y size in the EPD
-      * @retval None
-      */
+     * @brief  Displays picture..
+     * @param  pdata: picture address.
+     * @param  Xpos:  Image X position in the EPD
+     * @param  Ypos:  Image Y position in the EPD
+     * @param  Xsize: Image X size in the EPD
+     * @note   Xsize have to be a multiple of 4
+     * @param  Ysize: Image Y size in the EPD
+     * @retval None
+     */
     void draw_image(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysize, uint8_t *pdata);
+
+    /**
+     * @brief  Draws a character on EPD.
+     * @param  Xpos: specifies the X position, can be a value from 0 to 171
+     * @param  Ypos: specifies the Y position, can be a value from 0 to 17
+     * @param  c: pointer to the character data
+     * @retval None
+     */
+    void draw_char(uint16_t Xpos, uint16_t Ypos, const uint8_t *c);
 };
 
 #endif
