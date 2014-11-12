@@ -39,3 +39,16 @@ $ cd build
 $ cmake ..
 $ make
 ```
+
+### Flashing with OpenOCD
+
+```bash
+$ openocd -f board/stm32l0discovery.cfg
+$ telnet localhost 4444
+$ poll
+$ reset halt
+$ flash probe 0
+$ flash write_image erase DISCOVERY.bin 0x8000000
+$ verify_image DISCOVERY.bin 0x8000000
+$ reset run
+```
