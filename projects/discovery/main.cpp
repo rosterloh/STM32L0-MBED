@@ -11,24 +11,28 @@
  */
 
 #include "mbed.h"
-#include "rtos.h"
+//#include "rtos.h"
 #include "DeviceIO.h"
+#include <string>
 
 DeviceIO io;
+Ticker ticker;
 
-void led2_thread(void const *args) {
-  while (true) {
-    io.setLED(GREEN, TOGGLE);
-    Thread::wait(1000);
-  }
+void doTick() {
+  io.setLED(GREEN, TOGGLE);
+
+  char line1[15];
+  char line2[15];
+  printf("Temp: %4.2f C", io.temperatureSensor().ReadTemperature(CELCIUS));
+  printf("Hum: %4.2f", io.temperatureSensor().ReadHumidity());
 }
 
 int main() {
-  //DeviceIO io;
-  Thread thread(led2_thread);
+  ticker.attach(&doTick, 2.0); // the address of the function to be attached (doTick) and the interval (2 seconds)
 
   while(1) {
     io.setLED(RED, TOGGLE);
-    Thread::wait(500);
+    wait(0.5);
   }
+
 }

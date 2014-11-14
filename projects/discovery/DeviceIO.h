@@ -14,6 +14,7 @@
 #define DEVICEIO_H
 
 #include "mbed.h"
+#include "DHT.h"
 #include "GDE021A1.h"
 
 /**
@@ -43,12 +44,15 @@ public:
     bool userButtonPressed();
     void setLED(LEDTypdef led, IOTypdef state);
     AnalogIn& analog1();
+    DHT& temperatureSensor();
+    void displayPrint(const char*, const char* = NULL, const char* = NULL);
 
 private:
     DigitalIn _userButton;
     DigitalOut _led1;
     DigitalOut _led2;
     AnalogIn _analog1;
+    DHT _temperatureSensor;
     GDE021A1 _display;
 };
 

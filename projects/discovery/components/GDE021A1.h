@@ -26,6 +26,7 @@
 #define GDE021A1_H
 
 #include "mbed.h"
+#include "GraphicsDisplay.h"
 
 /**
   * @brief  Line mode structures definition
@@ -45,9 +46,11 @@ typedef struct _tFont
   const uint8_t *table;
   uint16_t Width;
   uint16_t Height;
+  uint16_t Offset;
+  
 } sFONT;
 
-class GDE021A1
+class GDE021A1 : public GraphicsDisplay
 {
 public:
     /**
@@ -61,28 +64,31 @@ public:
      * @param pwr   - power pin
      * @param reset - reset pin
      */
-    GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,  PinName cd, PinName busy, PinName pwr, PinName reset);
+    GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,
+             PinName cd, PinName busy, PinName pwr, PinName reset,
+             const char* name ="E_Paper");
 
-    /**
-     * @brief  Get the width in pixels of the display.
-     * @param  None
-     * @retval width in pixels
+    /** Get the width of the screen in pixel
+      *
+      * @param
+      * @returns width of screen in pixel
+      *
+      */
+    virtual int width();
+
+    /** Get the height of the screen in pixel
+     *
+     * @returns height of screen in pixel
+     *
      */
-    int width();
+    virtual int height();
 
     /**
-     * @brief  Get the height in pixels of the display.
-     * @param  None
-     * @retval height in pixels
-     */
-    int height();
-
-    /**
-     * @brief  Clears the hole EPD.
+     * @brief  Clears the whole EPD by filling with white.
      * @param  None
      * @retval None
      */
-    void cls();
+    virtual void cls(void);
 
     /**
       * @brief  Displays one character.
@@ -168,6 +174,46 @@ public:
       */
     void drawImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysize, uint8_t *pdata);
 
+    void splashScreen(void);
+
+    void refresh(void);
+
+    /** setup cursor position
+     *
+     * @param x x-position (top left)
+     * @param y y-position
+     */
+    virtual void locate(int x, int y);
+
+    /** calculate the max number of char in a line
+     *
+     * @returns max columns
+     * depends on actual font size
+     */
+    virtual int columns();
+
+    /** calculate the max number of columns
+     *
+     * @returns max column
+     * depends on actual font size
+     */
+    virtual int rows();
+
+    /** put a char on the screen
+     *
+     * @param value char to print
+     * @returns printed char
+     */
+    virtual int _putc(int value);
+
+    /** paint a character on given position out of the active font to the screen buffer
+     *
+     * @param x x-position (top left)
+     * @param y y-position
+     * @param c char code
+     */
+    virtual void character(int x, int y, int c);
+
 private:
     SPI _spi;
     DigitalOut _cs;
@@ -176,6 +222,10 @@ private:
     DigitalOut _pwr;
     DigitalOut _reset;
     sFONT _font;
+    static const uint16_t _height = 18;
+    static const uint16_t _width = 172;
+    unsigned int char_x;
+    unsigned int char_y;
 
     /**
      * @brief  Writes data to the device

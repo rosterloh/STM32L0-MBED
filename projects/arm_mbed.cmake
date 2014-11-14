@@ -3,24 +3,23 @@
 # This file should be included towards the end of your CMakeLists.txt
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.10)
 
-# ------------------------------------------------------------------------------
-# git checkout and build location of mbed libraries
-set(MBED_PATH "/opt/local/mbed/build")
-# location where the arm toolset is installed
-set(ARM_GCC_PATH "/opt/local/gcc-arm")
+
+if(NOT DEFINED MBED_PATH)
+  message(FATAL_ERROR "MBED_PATH is not defined. Please set in CMakeLists.txt")
+endif()
 
 # ------------------------------------------------------------------------------
 # custom target for copying to mbed device
-add_custom_target(upload
-  arm-none-eabi-objcopy -O binary ${BIN} ${BIN}.bin
-  COMMAND cp ${BIN}.bin ${MBEDMOUNT}
-)
+#add_custom_target(upload
+#  arm-none-eabi-objcopy -O binary ${BIN} ${BIN}.bin
+#  COMMAND cp ${BIN}.bin ${MBEDMOUNT}
+#)
 
 # ------------------------------------------------------------------------------
 # custom target for opening serial console
-add_custom_target(sercon
-  command screen ${SERCON} 9600
-)
+#add_custom_target(sercon
+#  command screen ${SERCON} 9600
+#)
 
 # ------------------------------------------------------------------------------
 # setup processor settings add aditional boards here
@@ -54,16 +53,16 @@ elseif(MBED_TARGET MATCHES "LPC11U24")
   set(MBED_SYSTEM "system_LPC11Uxx.o")
   set(MBED_LINK_TARGET ${MBED_TARGET})
 
-elseif(MBED_TARGET MATCHES "NUCLEO_L053R8")
-    set(MBED_VENDOR "STM")
-    set(MBED_FAMILY "LPC11UXX")
-    set(MBED_CPU "LPC11U24_401")
-    set(MBED_CORE "cortex-m0")
-    set(MBED_INSTRUCTIONSET "M0")
+elseif(MBED_TARGET MATCHES "DISCO_L053C8")
+  set(MBED_VENDOR "STM")
+  set(MBED_FAMILY "STM32L0")
+  set(MBED_CPU "STM32L053C8")
+  set(MBED_CORE "cortex-m0plus")
+  set(MBED_INSTRUCTIONSET "M0P")
 
-    set(MBED_STARTUP "startup_LPC11xx.o")
-    set(MBED_SYSTEM "system_LPC11Uxx.o")
-    set(MBED_LINK_TARGET ${MBED_TARGET})
+  set(MBED_STARTUP "startup_stm32l053xx.o")
+  set(MBED_SYSTEM "system_stm32l0xx.o")
+  set(MBED_LINK_TARGET "STM32L0xx")
 
 elseif(MBED_TARGET MATCHES "RBLAB_NRF51822")
   set(MBED_VENDOR "NORDIC")
@@ -80,49 +79,91 @@ else()
    message(FATAL_ERROR "No MBED_TARGET specified or available. Full stop :(")
 endif()
 
+message("Building for ${MBED_VENDOR} ${MBED_TARGET}")
+
 # ------------------------------------------------------------------------------
 # compiler settings
-SET(COMMON_FLAGS "${COMMON_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -fno-exceptions -fno-builtin -MMD -fno-delete-null-pointer-checks")
-SET(COMMON_FLAGS "${COMMON_FLAGS} -mcpu=${MBED_CORE} -O2 -mthumb -fno-exceptions -msoft-float -ffunction-sections -fdata-sections -g -fno-common -fmessage-length=0")
+add_definitions("-DTARGET_${MBED_VENDOR}")
+add_definitions("-DTARGET_${MBED_FAMILY}")
+add_definitions("-DTARGET_${MBED_CPU}")
+add_definitions("-DTARGET_${MBED_TARGET}")
+add_definitions("-DTARGET_${MBED_INSTRUCTIONSET}")
+if(MBED_INSTRUCTIONSET MATCHES "M0P")
+add_definitions("-D__CORTEX_${MBED_INSTRUCTIONSET}LUS")
+add_definitions("-DARM_MATH_${MBED_INSTRUCTIONSET}LUS")
+else()
+add_definitions("-D__CORTEX_${MBED_INSTRUCTIONSET}")
+add_definitions("-DARM_MATH_${MBED_INSTRUCTIONSET}")
+endif()
+add_definitions("-DTOOLCHAIN_GCC_ARM")
+add_definitions("-DTOOLCHAIN_GCC")
+add_definitions("-D__MBED__=1")
+add_definitions("-DMBED_USERNAME=rosterloh84")
 
-SET(MBED_DEFINES "${MBED_DEFINES} -DTARGET_${MBED_TARGET}")
-SET(MBED_DEFINES "${MBED_DEFINES} -DTARGET_${MBED_INSTRUCTIONSET}")
-SET(MBED_DEFINES "${MBED_DEFINES} -DTARGET_${MBED_VENDOR}")
-SET(MBED_DEFINES "${MBED_DEFINES} -DTOOLCHAIN_GCC_ARM")
-SET(MBED_DEFINES "${MBED_DEFINES} -DTOOLCHAIN_GCC")
+add_definitions("-mcpu=${MBED_CORE}")
+add_definitions(
+  -Os
+  -mthumb
+  -Wall
+  -Wextra
+  -Wno-unused-parameter
+  -Wno-missing-field-initializers
+  -Wno-error=switch
+  -Wno-switch
+  -fmessage-length=0
+  -fno-builtin
+  -ffunction-sections
+  -fdata-sections
+  -fno-delete-null-pointer-checks
+  -fomit-frame-pointer
+  -fno-common
+  -funsigned-bitfields
+  -c
+  -g
+  -MMD
+  -MP
+) # -msoft-float
 
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS} ${MBED_DEFINES} -std=gnu++0x")
-SET(CMAKE_C_FLAGS "${COMMON_FLAGS} ${MBED_DEFINES} -std=gnu99")
-
+# Language specifc compiler flags.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x -fno-rtti -fno-exceptions -fno-threadsafe-statics")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=gnu99 -Wno-pointer-sign -Wno-pointer-to-int-cast")
+set(CMAKE_ASM_FLAGS "${COMMON_COMPILE_FLAGS} -x assembler-with-cpp")
 
 # ------------------------------------------------------------------------------
-# setup precompiled mbed files which will be needed for all projects
-set(MBED_OBJECTS
-  ${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/${MBED_STARTUP}
-  ${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/${MBED_SYSTEM}
-  ${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/cmsis_nvic.o
-  ${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/retarget.o
-  ${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/board.o
+# linker settings
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS -T${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/${MBED_LINK_TARGET}.ld)
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS} -Wl,--gc-sections -Wl,--wrap,main -Wl,-Map=${PROJECT_NAME}.map -mcpu=${MBED_CORE} -mthumb --specs=nano.specs -lstdc++ -lsupc++ -lm -lc -lgcc -lnosys -lstdc++ -lsupc++ -lm -lc -lgcc -lnosys")
+
+# ------------------------------------------------------------------------------
+# setup mbed files which will be needed for all projects
+file(GLOB MBED_SRC_SOURCES
+       ${MBED_SRC_PATH}/common/*.c
+       ${MBED_SRC_PATH}/common/*.cpp
+       ${MBED_SRC_PATH}/targets/cmsis/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/*.c
+       ${MBED_SRC_PATH}/targets/cmsis/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_TARGET}/*.c
+       ${MBED_SRC_PATH}/targets/hal/TARGET_${MBED_VENDOR}/TARGET_${MBED_TARGET}/*.c
 )
+add_sources(${MBED_SRC_SOURCES})
 
 # ------------------------------------------------------------------------------
 # libraries for mbed
 set(MBED_LIBS mbed stdc++ supc++ m gcc g c nosys rdimon)
 
 # ------------------------------------------------------------------------------
-# linker settings
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections -Wl,--wrap,main --specs=nano.specs  -u _printf_float -u _scanf_float")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \"-T${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}/${MBED_LINK_TARGET}.ld\" -static")
-
-# ------------------------------------------------------------------------------
 # mbed
 include_directories("${MBED_PATH}/mbed/")
-include_directories("${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/")
-include_directories("${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}")
-include_directories("${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/")
-include_directories("${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}")
+include_directories("${MBED_PATH}/mbed/api/")
+include_directories("${MBED_PATH}/mbed/common/")
+include_directories("${MBED_PATH}/mbed/hal/")
+include_directories("${MBED_PATH}/mbed/targets/")
+include_directories("${MBED_PATH}/mbed/targets/cmsis/")
+include_directories("${MBED_PATH}/mbed/targets/cmsis/TARGET_${MBED_VENDOR}/")
+include_directories("${MBED_PATH}/mbed/targets/cmsis/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/")
+include_directories("${MBED_PATH}/mbed/targets/cmsis/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_TARGET}/")
+include_directories("${MBED_PATH}/mbed/targets/cmsis/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_TARGET}/${TOOLCHAIN}/")
+include_directories("${MBED_PATH}/mbed/targets/hal/TARGET_${MBED_VENDOR}/TARGET_${MBED_TARGET}/")
 
-link_directories("${MBED_PATH}/mbed/TARGET_${MBED_TARGET}/${TOOLCHAIN}")
+link_directories("${MBED_PATH}/mbed/targets/cmsis/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_TARGET}/${TOOLCHAIN}")
 
 # add networking
 if(${USE_NET} STREQUAL "true")
@@ -150,10 +191,12 @@ endif()
 # add rtos
 if(${USE_RTOS} STREQUAL "true")
   include_directories("${MBED_PATH}/rtos/")
-  include_directories("${MBED_PATH}/rtos/TARGET_${MBED_TARGET}/")
-  include_directories("${MBED_PATH}/rtos/TARGET_${MBED_TARGET}/${TOOLCHAIN}")
+  include_directories("${MBED_PATH}/rtos/rtos")
+  include_directories("${MBED_PATH}/rtos/rtx/TARGET_CORTEX_M")
+  include_directories("${MBED_PATH}/rtos/rtx/TARGET_CORTEX_M/TARGET_${MBED_INSTRUCTIONSET}/")
+  include_directories("${MBED_PATH}/rtos/rtx/TARGET_CORTEX_M/TARGET_${MBED_INSTRUCTIONSET}/${TOOLCHAIN}")
 
-  link_directories("${MBED_PATH}/rtos/TARGET_${MBED_TARGET}/${TOOLCHAIN}")
+  link_directories("${MBED_PATH}/rtos/rtx/TARGET_CORTEX_M/TARGET_${MBED_INSTRUCTIONSET}/${TOOLCHAIN}")
   set(MBED_LIBS ${MBED_LIBS} rtos rtx)
 endif()
 

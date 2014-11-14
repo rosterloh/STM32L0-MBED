@@ -75,21 +75,16 @@ const unsigned char WF_LUT[]={
 #define EPD_REG_240           0xF0   /* Booster Set Internal Feedback Selection */
 #define EPD_REG_255           0xFF   /* NOP */
 
-/*
-extern sFONT Font20;
-extern sFONT Font16;
-extern sFONT Font12;
-extern sFONT Font8;
-
-#define LINE(x) ((x) * (((sFONT *)BSP_EPD_GetFont())->Height))
-*/
-GDE021A1::GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName cd, PinName busy, PinName pwr, PinName reset) :
+GDE021A1::GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,
+                   PinName cd, PinName busy, PinName pwr, PinName reset,
+                   const char* name) :
     _spi(mosi, miso, sclk, cs),
     _cs(cs),
     _cd(cd),
     _busy(busy),
     _pwr(pwr),
-    _reset(reset)
+    _reset(reset),
+    GraphicsDisplay(name)
 {
     _pwr = 0;                /** Enable Display */
     _cs = 0;                 /** Set or Reset the control line */
@@ -97,34 +92,25 @@ GDE021A1::GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName
     _reset = 1;              /** EPD reset pin mamagement */
     wait_ms(10);
 
-    _spi.format(8,3);        /** Setup the spi for 8 bit data, high steady state clock, second edge capture */
+    _spi.format(8, 3);        /** Setup the spi for 8 bit data, high steady state clock, second edge capture */
     _spi.frequency(4000000); /** 4MHz clock rate */
 
     _font.table = Font16_Table;
     _font.Width = 11;
     _font.Height = 4;
+    _font.Offset = 44; // bytes per char
 
     registers_init();
 }
 
-/**
- * @brief  Get the width in pixels of the display.
- * @param  None
- * @retval width in pixels
- */
 int GDE021A1::width()
 {
     return 172;
 }
 
-/**
- * @brief  Get the height in pixels of the display.
- * @param  None
- * @retval height in pixels
- */
 int GDE021A1::height()
 {
-    return 16;
+    return 18;
 }
 
 /**
@@ -136,7 +122,7 @@ void GDE021A1::cls()
 {
     uint32_t index = 0;
 
-    set_display_window(0, 0, 171, 17);
+    set_display_window(0, 0, _width-1, _height-1);
 
     for(index = 0; index < 3096; index++)
     {
@@ -155,7 +141,7 @@ void GDE021A1::displayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
 {
   Ascii -= 32;
 
-  draw_char(Xpos, Ypos, &_font.table[Ascii * ((_font.Height) * (_font.Width))]);
+  draw_char(Xpos, Ypos, &_font.table[Ascii * (_font.Height * _font.Width)]);
 }
 
 /**
@@ -180,7 +166,7 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
     while (*ptr++) size++ ;
 
     /* Characters number per line */
-    xsize = (width()/_font.Width);
+    xsize = (_width/_font.Width);
 
     switch (Mode)
     {
@@ -207,7 +193,7 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
     }
 
     /** Send the string character by character on EPD */
-    while ((*Text != 0) & (((width() - (i*_font.Width)) & 0xFFFF) >= _font.Width))
+    while ((*Text != 0) & (((_width - (i*_font.Width)) & 0xFFFF) >= _font.Width))
     {
         displayChar(refcolumn, Ypos, *Text); /** Display one character on EPD */
         refcolumn += _font.Width;            /** Decrement the column position by 16 */
@@ -229,7 +215,7 @@ void GDE021A1::stringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Text_AlignM
   */
 void GDE021A1::stringAtLine(uint16_t Line, uint8_t *ptr)
 {
-    //stringAt(0, LINE(Line), ptr, LEFT_MODE);
+    stringAt(0, _font.Height*Line, ptr, LEFT_MODE);
 }
 
 /**
@@ -299,15 +285,15 @@ void GDE021A1::drawRect(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t H
   */
 void GDE021A1::fillRect(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Height)
 {
-  uint16_t index = 0;
+    uint16_t index = 0;
 
-  /* Set the rectangle */
-  set_display_window(Xpos, Ypos, (Xpos + Width), (Ypos + Height));
+    /* Set the rectangle */
+    set_display_window(Xpos, Ypos, (Xpos + Width), (Ypos + Height));
 
-  for(index = 0; index < 3096; index++)
-  {
-      write_pixel(0xFF);
-  }
+    for(index = 0; index < 3096; index++)
+    {
+        write_pixel(EPD_COLOR_BLACK);
+    }
 }
 
 /**
@@ -326,7 +312,96 @@ void GDE021A1::drawImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t 
 
     draw_image(Xpos, Ypos, Xsize, Ysize, pdata);
 
-    set_display_window(0, 0, width(), height());
+    set_display_window(0, 0, _width, _height);
+}
+
+void GDE021A1::splashScreen( void )
+{
+    cls();
+    drawRect(10, 4, 152, 8);
+    stringAtLine(1, (uint8_t*)"BUDDI");
+    refresh_display();
+}
+
+void GDE021A1::refresh( void )
+{
+    refresh_display();
+}
+
+// set cursor position
+void GDE021A1::locate(int x, int y)
+{
+    char_x = x;
+    char_y = y;
+}
+
+// calc char columns
+int GDE021A1::columns()
+{
+    return width() / _font.Width;
+}
+
+// calc char rows
+int GDE021A1::rows()
+{
+    return height() / _font.Height;
+}
+
+// print char
+int GDE021A1::_putc(int value)
+{
+    if (value == '\n') {    // new line
+        char_x = 0;
+        char_y = char_y + _font.Height;
+        if (char_y >= height() - _font.Height) {
+            char_y = 0;
+        }
+    } else {
+        character(char_x, char_y, value);
+    }
+    return value;
+}
+
+// paint char out of font
+void GDE021A1::character(int x, int y, int c)
+{
+    unsigned int hor,vert,offset,bpl,j,i,b;
+    unsigned char* zeichen;
+    unsigned char z,w;
+
+    if ((c < 31) || (c > 127)) return;   // test char range
+
+    // read font parameter from start of array
+    offset = _font.Offset;               // bytes / char
+    hor = _font.Width;                   // get hor size of font
+    vert = _font.Height;                 // get vert size of font
+    bpl = font[3];                       // bytes per line
+
+    if (char_x + hor > width()) {
+        char_x = 0;
+        char_y = char_y + vert;
+        if (char_y >= height() - font[2]) {
+            char_y = 0;
+        }
+    }
+
+    zeichen = &font[((c -32) * offset) + 4]; // start of char bitmap
+    w = zeichen[0];                          // width of actual char
+    // construct the char into the buffer
+    for (j=0; j<vert; j++) {  //  vert line
+        for (i=0; i<hor; i++) {   //  horz line
+            z =  zeichen[bpl * i + ((j & 0xF8) >> 3)+1];
+            b = 1 << (j & 0x07);
+            if (( z & b ) == 0x00) {
+                pixel(x+i,y+j,0);
+            } else {
+                pixel(x+i,y+j,1);
+            }
+
+        }
+    }
+
+    char_x += w;
 }
 
 /**
@@ -350,7 +425,7 @@ void GDE021A1::write_data( uint16_t RegValue )
 void GDE021A1::write_reg( uint8_t Reg )
 {
     _cs = 0;              /** Reset EPD control line CS */
-    _cd = 1;              /** Set EPD data/command line DC to Low */
+    _cd = 0;              /** Set EPD data/command line DC to Low */
     _spi.write(Reg);      /** Send Data */
     _cs = 1;              /** Deselect: Chip Select high */
 }
@@ -649,16 +724,16 @@ void GDE021A1::draw_image(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t
  */
 void GDE021A1::draw_char(uint16_t Xpos, uint16_t Ypos, const uint8_t *c)
 {
-  uint32_t index = 0;
-  uint32_t data_length = 0;
+    uint32_t index = 0;
+    uint32_t data_length = 0;
 
-  /* Set the Character display window */
-  set_display_window(Xpos, Ypos, (Xpos + _font.Width - 1), (Ypos + _font.Height - 1));
+    /* Set the Character display window */
+    set_display_window(Xpos, Ypos, (Xpos + _font.Width - 1), (Ypos + _font.Height - 1));
 
-  data_length = (_font.Height * _font.Width);
+    data_length = (_font.Height * _font.Width);
 
-  for(index = 0; index < data_length; index++)
-  {
-    write_pixel(c[index]);
-  }
+    for(index = 0; index < data_length; index++)
+    {
+        write_pixel(c[index]);
+    }
 }
