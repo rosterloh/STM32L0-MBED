@@ -45,6 +45,7 @@ public:
     void setLED(LEDTypdef led, IOTypdef state);
     AnalogIn& analog1();
     DHT& temperatureSensor();
+    void displayTemperature(void);
     void displayPrint(const char*, const char* = NULL, const char* = NULL);
 
 private:

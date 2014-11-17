@@ -26,7 +26,7 @@
 #define GDE021A1_H
 
 #include "mbed.h"
-#include "GraphicsDisplay.h"
+//#include "GraphicsDisplay.h"
 
 /**
   * @brief  Line mode structures definition
@@ -47,16 +47,15 @@ typedef struct _tFont
   uint16_t Width;
   uint16_t Height;
   uint16_t Offset;
-  
+
 } sFONT;
 
-class GDE021A1 : public GraphicsDisplay
+class GDE021A1/* : public GraphicsDisplay*/
 {
 public:
     /**
      * @brief Creates a new GDE021A1 object
      * @param mosi  - SPI MOSI pin
-     * @param miso  - SPI MISO pin
      * @param sclk  - SPI SCLK pin
      * @param cs    - SPI CS pin
      * @param cd    - command/data pin
@@ -64,9 +63,9 @@ public:
      * @param pwr   - power pin
      * @param reset - reset pin
      */
-    GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,
-             PinName cd, PinName busy, PinName pwr, PinName reset,
-             const char* name ="E_Paper");
+    GDE021A1(PinName mosi, PinName sclk, PinName cs,
+             PinName cd, PinName busy, PinName pwr, PinName reset/*,
+             const char* name ="E_Paper"*/);
 
     /** Get the width of the screen in pixel
       *
@@ -74,21 +73,29 @@ public:
       * @returns width of screen in pixel
       *
       */
-    virtual int width();
+    //virtual int width();
 
     /** Get the height of the screen in pixel
      *
      * @returns height of screen in pixel
      *
      */
-    virtual int height();
+    //virtual int height();
+
+    /** Draw a pixel at x,y black or white
+     *
+     * @param x horizontal position
+     * @param y vertical position
+     * @param colour ,1 set pixel ,0 erase pixel
+     */
+    //virtual void pixel(int x, int y, int colour);
 
     /**
-     * @brief  Clears the whole EPD by filling with white.
+     * @brief  Clears the hole EPD.
      * @param  None
      * @retval None
      */
-    virtual void cls(void);
+    void cls();
 
     /**
       * @brief  Displays one character.
@@ -183,28 +190,21 @@ public:
      * @param x x-position (top left)
      * @param y y-position
      */
-    virtual void locate(int x, int y);
+    //virtual void locate(int x, int y);
 
     /** calculate the max number of char in a line
      *
      * @returns max columns
      * depends on actual font size
      */
-    virtual int columns();
+    //virtual int columns();
 
     /** calculate the max number of columns
      *
      * @returns max column
      * depends on actual font size
      */
-    virtual int rows();
-
-    /** put a char on the screen
-     *
-     * @param value char to print
-     * @returns printed char
-     */
-    virtual int _putc(int value);
+    //virtual int rows();
 
     /** paint a character on given position out of the active font to the screen buffer
      *
@@ -212,7 +212,7 @@ public:
      * @param y y-position
      * @param c char code
      */
-    virtual void character(int x, int y, int c);
+    //virtual void character(int x, int y, int c);
 
 private:
     SPI _spi;
@@ -224,8 +224,6 @@ private:
     sFONT _font;
     static const uint16_t _height = 18;
     static const uint16_t _width = 172;
-    unsigned int char_x;
-    unsigned int char_y;
 
     /**
      * @brief  Writes data to the device

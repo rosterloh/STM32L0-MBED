@@ -75,21 +75,21 @@ const unsigned char WF_LUT[]={
 #define EPD_REG_240           0xF0   /* Booster Set Internal Feedback Selection */
 #define EPD_REG_255           0xFF   /* NOP */
 
-GDE021A1::GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,
-                   PinName cd, PinName busy, PinName pwr, PinName reset,
-                   const char* name) :
-    _spi(mosi, miso, sclk, cs),
+GDE021A1::GDE021A1(PinName mosi, PinName sclk, PinName cs,
+                   PinName cd, PinName busy, PinName pwr, PinName reset/*,
+                   const char* name*/) :
+    _spi(mosi, NC, sclk),
     _cs(cs),
     _cd(cd),
     _busy(busy),
     _pwr(pwr),
-    _reset(reset),
-    GraphicsDisplay(name)
+    _reset(reset)/*,
+    GraphicsDisplay(name)*/
 {
     _pwr = 0;                /** Enable Display */
     _cs = 0;                 /** Set or Reset the control line */
     _cs = 1;
-    _reset = 1;              /** EPD reset pin mamagement */
+    _reset = 1;              /** EPD reset pin management */
     wait_ms(10);
 
     _spi.format(8, 3);        /** Setup the spi for 8 bit data, high steady state clock, second edge capture */
@@ -102,7 +102,7 @@ GDE021A1::GDE021A1(PinName mosi, PinName miso, PinName sclk, PinName cs,
 
     registers_init();
 }
-
+/*
 int GDE021A1::width()
 {
     return 172;
@@ -112,6 +112,17 @@ int GDE021A1::height()
 {
     return 18;
 }
+
+// set one pixel in buffer
+void GDE021A1::pixel(int x, int y, int color)
+{
+    set_display_window(x, y, 1, 1);
+
+    write_pixel(color);
+
+    set_display_window(0, 0, _width, _height);
+}
+*/
 
 /**
  * @brief  Clears the hole EPD.
@@ -327,12 +338,11 @@ void GDE021A1::refresh( void )
 {
     refresh_display();
 }
-
+/*
 // set cursor position
 void GDE021A1::locate(int x, int y)
 {
-    char_x = x;
-    char_y = y;
+    set_display_window(x, y, _width-x, _height-y);
 }
 
 // calc char columns
@@ -347,63 +357,12 @@ int GDE021A1::rows()
     return height() / _font.Height;
 }
 
-// print char
-int GDE021A1::_putc(int value)
-{
-    if (value == '\n') {    // new line
-        char_x = 0;
-        char_y = char_y + _font.Height;
-        if (char_y >= height() - _font.Height) {
-            char_y = 0;
-        }
-    } else {
-        character(char_x, char_y, value);
-    }
-    return value;
-}
-
 // paint char out of font
 void GDE021A1::character(int x, int y, int c)
 {
-    unsigned int hor,vert,offset,bpl,j,i,b;
-    unsigned char* zeichen;
-    unsigned char z,w;
-
-    if ((c < 31) || (c > 127)) return;   // test char range
-
-    // read font parameter from start of array
-    offset = _font.Offset;               // bytes / char
-    hor = _font.Width;                   // get hor size of font
-    vert = _font.Height;                 // get vert size of font
-    bpl = font[3];                       // bytes per line
-
-    if (char_x + hor > width()) {
-        char_x = 0;
-        char_y = char_y + vert;
-        if (char_y >= height() - font[2]) {
-            char_y = 0;
-        }
-    }
-
-    zeichen = &font[((c -32) * offset) + 4]; // start of char bitmap
-    w = zeichen[0];                          // width of actual char
-    // construct the char into the buffer
-    for (j=0; j<vert; j++) {  //  vert line
-        for (i=0; i<hor; i++) {   //  horz line
-            z =  zeichen[bpl * i + ((j & 0xF8) >> 3)+1];
-            b = 1 << (j & 0x07);
-            if (( z & b ) == 0x00) {
-                pixel(x+i,y+j,0);
-            } else {
-                pixel(x+i,y+j,1);
-            }
-
-        }
-    }
-
-    char_x += w;
+    displayChar(x, y, c);
 }
-
+*/
 /**
  * @brief  Writes data to the device
  * @param  RegValue - Register address to write to

@@ -10,14 +10,15 @@
  ******************************************************************************
  */
 #include "DeviceIO.h"
+#include "stdio.h"
 
 DeviceIO::DeviceIO(void) :
     _userButton(USER_BUTTON), // PA_0
     _led1(LED1), // PB_4
     _led2(LED2), // PA_5
     _analog1(A1), // PA_1
-    _temperatureSensor(PA_4, AM2302),
-    _display(PB_5, PB_4, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2) // mosi, miso, sclk, cs, cd, busy, pwr, reset
+    _temperatureSensor(PA_4, DHT22), // PA_4, AM2302
+    _display(PB_5, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2) // mosi, sclk, cs, cd, busy, pwr, reset
 {
   _led1 = 1;
   _led2 = 1;
@@ -55,14 +56,35 @@ DHT& DeviceIO::temperatureSensor()
     return _temperatureSensor;
 }
 
+void DeviceIO::displayTemperature(void)
+{
+    char line1[15];
+    char line2[15];
+
+    int err = _temperatureSensor.readData();
+
+    if(err == 0) {
+      int t1 = _temperatureSensor.ReadTemperature();
+      int t2 = t1 % 10;
+      int h1 = _temperatureSensor.ReadHumidity();
+      int h2 = h1 % 10;
+      sprintf(line1, "Temp: %d.%d C", t1/10, t2);
+      sprintf(line2, "Hum:  %d.%d %%", h1/10, h2);
+    } else {
+      sprintf(line1, "ERROR");
+      sprintf(line2, "%d", err);
+    }
+    displayPrint(line1, line2);
+}
+
 void DeviceIO::displayPrint(const char *line1, const char *line2, const char *line3)
 {
     _display.cls();
-    _display.stringAtLine(1, line1);
+    _display.stringAtLine(3, (uint8_t*)line1);
     if(line2 != NULL) {
-        _display.stringAtLine(2, line2);
+        _display.stringAtLine(2, (uint8_t*)line2);
         if(line3 != NULL) {
-            _display.stringAtLine(3, line3);
+            _display.stringAtLine(1, (uint8_t*)line3);
         }
     }
     _display.refresh();

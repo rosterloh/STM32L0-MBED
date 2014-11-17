@@ -13,23 +13,19 @@
 #include "mbed.h"
 //#include "rtos.h"
 #include "DeviceIO.h"
-#include <string>
+#include "stdio.h"
 
 DeviceIO io;
 Ticker ticker;
 
 void doTick() {
   io.setLED(GREEN, TOGGLE);
-
-  char line1[15];
-  char line2[15];
-  printf("Temp: %4.2f C", io.temperatureSensor().ReadTemperature(CELCIUS));
-  printf("Hum: %4.2f", io.temperatureSensor().ReadHumidity());
+  io.displayTemperature();
 }
 
 int main() {
-  ticker.attach(&doTick, 2.0); // the address of the function to be attached (doTick) and the interval (2 seconds)
-
+  ticker.attach(&doTick, 30.0); // the address of the function to be attached (doTick) and the interval (2 seconds)
+  //io.displayTemperature();
   while(1) {
     io.setLED(RED, TOGGLE);
     wait(0.5);
