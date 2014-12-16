@@ -22,13 +22,23 @@ void doTick() {
   io.setLED(GREEN, TOGGLE);
   io.displayTemperature();
 }
-
+/*
+void led2_thread(void const *args) {
+    while (true) {
+        io.setLED(GREEN, TOGGLE);
+        Thread::wait(2000);
+    }
+}
+*/
 int main() {
   ticker.attach(&doTick, 30.0); // the address of the function to be attached (doTick) and the interval (2 seconds)
-  //io.displayTemperature();
+  io.displayTemperature();
+  //Thread thread(led2_thread);
+
   while(1) {
     io.setLED(RED, TOGGLE);
     wait(0.5);
+    //Thread::wait(500);
   }
 
 }
