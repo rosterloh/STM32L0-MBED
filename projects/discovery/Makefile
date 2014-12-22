@@ -8,7 +8,7 @@ DEVICES         := STM32L053
 WORKSPACE_ROOT  := ../..
 NO_FLOAT_SCANF  := 1
 NO_FLOAT_PRINTF := 1
-#MBED_LIBS       := rtos
+MBED_LIBS       := rtos
 #VERBOSE         := 1
 
 include $(WORKSPACE_ROOT)/build/mbed.mk
