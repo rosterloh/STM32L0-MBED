@@ -10,13 +10,13 @@
  ******************************************************************************
  */
 #include "DeviceIO.h"
-#include "stdio.h"
+//#include "stdio.h"
 
 DeviceIO::DeviceIO(void) :
-    _userButton(USER_BUTTON), // PA_0
-    _led1(LED1), // PB_4
-    _led2(LED2), // PA_5
-    _analog1(A1), // PA_1
+    _userButton(PA_0),
+    _led1(PB_4),
+    _led2(PA_5),
+    //_analog1(PA_1),
     _temperatureSensor(PA_4, DHT22), // PA_4, AM2302
     _display(PB_5, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2) // mosi, sclk, cs, cd, busy, pwr, reset
 {
@@ -45,12 +45,12 @@ void DeviceIO::setLED(LEDTypdef led, IOTypdef state)
         break;
     }
 }
-
+/*
 AnalogIn& DeviceIO::analog1()
 {
     return _analog1;
 }
-
+*/
 DHT& DeviceIO::temperatureSensor()
 {
     return _temperatureSensor;

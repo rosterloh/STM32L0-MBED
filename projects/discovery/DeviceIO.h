@@ -9,9 +9,7 @@
  * Device hardware abstractions
  ******************************************************************************
  */
-
-#ifndef DEVICEIO_H
-#define DEVICEIO_H
+#pragma once
 
 #include "mbed.h"
 #include "DHT.h"
@@ -43,7 +41,7 @@ public:
 
     bool userButtonPressed();
     void setLED(LEDTypdef led, IOTypdef state);
-    AnalogIn& analog1();
+    //AnalogIn& analog1();
     DHT& temperatureSensor();
     void displayTemperature(void);
     void displayPrint(const char*, const char* = NULL, const char* = NULL);
@@ -52,9 +50,7 @@ private:
     DigitalIn _userButton;
     DigitalOut _led1;
     DigitalOut _led2;
-    AnalogIn _analog1;
+    //AnalogIn _analog1;
     DHT _temperatureSensor;
     GDE021A1 _display;
 };
-
-#endif

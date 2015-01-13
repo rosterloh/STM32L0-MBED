@@ -1,5 +1,7 @@
 projects/demo/build
 projects/discovery/build
+projects/rtos_basic/build
 projects/test/build
+projects/USBHostHub/build
 .cproject
 .project
