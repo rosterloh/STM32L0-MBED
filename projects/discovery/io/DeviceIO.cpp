@@ -10,18 +10,19 @@
  ******************************************************************************
  */
 #include "DeviceIO.h"
-//#include "stdio.h"
 
-DeviceIO::DeviceIO(void) :
+DeviceIO::DeviceIO(GPSI2C& gps) :
     _userButton(PA_0),
     _led1(PB_4),
     _led2(PA_5),
     //_analog1(PA_1),
     _temperatureSensor(PA_4, DHT22), // PA_4, AM2302
-    _display(PB_5, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2) // mosi, sclk, cs, cd, busy, pwr, reset
+    _display(PB_5, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2), // mosi, sclk, cs, cd, busy, pwr, reset
+    _gpsTracker(gps)
+    //_deviceFeedback(_speaker)
 {
-  _led1 = 1;
-  _led2 = 1;
+  _led1 = 0;
+  _led2 = 0;
 
   _display.splashScreen();
 }
@@ -46,6 +47,11 @@ void DeviceIO::setLED(LEDTypdef led, IOTypdef state)
     }
 }
 /*
+DeviceFeedback& DeviceIO::deviceFeedback()
+{
+  return _deviceFeedback;
+}
+
 AnalogIn& DeviceIO::analog1()
 {
     return _analog1;

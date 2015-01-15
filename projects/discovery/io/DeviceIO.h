@@ -14,6 +14,9 @@
 #include "mbed.h"
 #include "DHT.h"
 #include "GDE021A1.h"
+#include "GPS.h"
+#include "GPSTracker.h"
+//#include DeviceFeedback.h
 
 /**
  * @brief  IO state definition
@@ -37,9 +40,11 @@ typedef enum
 class DeviceIO
 {
 public:
-    DeviceIO(void);
+    DeviceIO(GPSI2C&);
 
     bool userButtonPressed();
+    GPSTracker& gpsTracker();
+    //DeviceFeedback& deviceFeedback();
     void setLED(LEDTypdef led, IOTypdef state);
     //AnalogIn& analog1();
     DHT& temperatureSensor();
@@ -53,4 +58,6 @@ private:
     //AnalogIn _analog1;
     DHT _temperatureSensor;
     GDE021A1 _display;
+    GPSTracker _gpsTracker;
+    //DeviceFeedback _deviceFeedback;
 };
