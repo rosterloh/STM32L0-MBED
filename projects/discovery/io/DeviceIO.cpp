@@ -16,20 +16,26 @@ DeviceIO::DeviceIO(GPSI2C& gps) :
     _led1(PB_4),
     _led2(PA_5),
     //_analog1(PA_1),
-    _temperatureSensor(PA_4, DHT22), // PA_4, AM2302
-    _display(PB_5, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2), // mosi, sclk, cs, cd, busy, pwr, reset
+    _temperatureSensor(PA_4, AM2302),
+    //_display(PB_5, PB_3, PA_15, PB_11, PA_8, PB_10, PB_2), // mosi, sclk, cs, cd, busy, pwr, reset
     _gpsTracker(gps)
     //_deviceFeedback(_speaker)
 {
   _led1 = 0;
   _led2 = 0;
+  //_displayWrites = 0;
 
-  _display.splashScreen();
+  //_display.splashScreen();
 }
 
 bool DeviceIO::userButtonPressed()
 {
     return _userButton;
+}
+
+GPSTracker& DeviceIO::gpsTracker()
+{
+  return _gpsTracker;
 }
 
 void DeviceIO::setLED(LEDTypdef led, IOTypdef state)
@@ -61,7 +67,7 @@ DHT& DeviceIO::temperatureSensor()
 {
     return _temperatureSensor;
 }
-
+/*
 void DeviceIO::displayTemperature(void)
 {
     char line1[15];
@@ -70,12 +76,14 @@ void DeviceIO::displayTemperature(void)
     int err = _temperatureSensor.readData();
 
     if(err == 0) {
-      int t1 = _temperatureSensor.ReadTemperature();
-      int t2 = t1 % 10;
-      int h1 = _temperatureSensor.ReadHumidity();
-      int h2 = h1 % 10;
-      sprintf(line1, "Temp: %d.%d C", t1/10, t2);
-      sprintf(line2, "Hum:  %d.%d %%", h1/10, h2);
+      //int t1 = _temperatureSensor.ReadTemperature();
+      //int t2 = t1 % 10;
+      //int h1 = _temperatureSensor.ReadHumidity();
+      //int h2 = h1 % 10;
+      //sprintf(line1, "Temp: %d.%d C", t1/10, t2);
+      //sprintf(line2, "Hum:  %d.%d %%", h1/10, h2);
+      sprintf(line1, "Temp: %4.2f C", _temperatureSensor.ReadTemperature(CELCIUS));
+      sprintf(line2, "Hum:  %4.2f %%", _temperatureSensor.ReadHumidity());
     } else {
       sprintf(line1, "ERROR");
       sprintf(line2, "%d", err);
@@ -93,5 +101,10 @@ void DeviceIO::displayPrint(const char *line1, const char *line2, const char *li
             _display.stringAtLine(1, (uint8_t*)line3);
         }
     }
-    _display.refresh();
+    _displayWrites++;
+    if(_displayWrites == 5) {
+      _display.refresh();
+      _displayWrites = 0;
+    }
 }
+*/

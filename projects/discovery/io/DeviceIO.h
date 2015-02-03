@@ -13,7 +13,7 @@
 
 #include "mbed.h"
 #include "DHT.h"
-#include "GDE021A1.h"
+//#include "GDE021A1.h"
 #include "GPS.h"
 #include "GPSTracker.h"
 //#include DeviceFeedback.h
@@ -48,8 +48,8 @@ public:
     void setLED(LEDTypdef led, IOTypdef state);
     //AnalogIn& analog1();
     DHT& temperatureSensor();
-    void displayTemperature(void);
-    void displayPrint(const char*, const char* = NULL, const char* = NULL);
+    //void displayTemperature(void);
+    //void displayPrint(const char*, const char* = NULL, const char* = NULL);
 
 private:
     DigitalIn _userButton;
@@ -57,7 +57,8 @@ private:
     DigitalOut _led2;
     //AnalogIn _analog1;
     DHT _temperatureSensor;
-    GDE021A1 _display;
+    //GDE021A1 _display;
     GPSTracker _gpsTracker;
     //DeviceFeedback _deviceFeedback;
+    //int _displayWrites;
 };

@@ -13,7 +13,7 @@
 #endif
 
 //! include debug capabilty on more powerful targets with a dedicated debug port
-#if defined(TARGET_LPC1768) || defined(TARGET_LPC4088) || defined(TARGET_K64F)
+#if defined(TARGET_LPC1768) || defined(TARGET_LPC4088) || defined(TARGET_K64F) || defined(TARGET_DISCO_L053C8)
   #define MDM_DEBUG
 #endif
 
@@ -322,7 +322,7 @@ public:
   // ----------------------------------------------------------------
 
   /*! Set the debug level
-   *  \param level 0 = OFF, 1 = INFO(default), 2 = TRACE, 3 = ATCMD
+   *  \param level -1 = OFF, 0 = ERROR, 1 = INFO(default), 2 = TRACE, 3 = ATCMD,TEST
    *  \return true if successful, false not possible
    */
   bool setDebug(int level);
@@ -558,6 +558,7 @@ protected:
 #ifdef MDM_DEBUG
   int _debugLevel;
   Timer _debugTime;
+  void _debugPrint(int level, const char* color, const char* format, ...);
 #endif
 };
 
@@ -581,8 +582,8 @@ public:
    *  \param rxSize the size of the serial rx buffer
    *  \param txSize the size of the serial tx buffer
    */
-  MDMSerial(PinName tx    MDM_IF( = MDMTXD,  = D1 ),
-            PinName rx    MDM_IF( = MDMRXD,  = D0 ),
+  MDMSerial(PinName tx    MDM_IF( = MDMTXD,  = PA_2 ),
+            PinName rx    MDM_IF( = MDMRXD,  = PA_3 ),
             int baudrate  MDM_IF( = MDMBAUD, = 115200 ),
 #if DEVICE_SERIAL_FC
             PinName rts   MDM_IF( = MDMRTS,  = NC /* D2 resistor R62 on shield not mounted */ ),

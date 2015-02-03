@@ -62,10 +62,24 @@ void dumpAtCmd(const char* buf, int len)
   ::printf("\"\r\n");
 }
 
-  #define ERROR(...)     (_debugLevel < 0) ? : ::printf(RED), ::printf(__VA_ARGS__), ::printf(DEF)
-  #define TEST(...)                            ::printf(CYA), ::printf(__VA_ARGS__), ::printf(DEF)
-  #define INFO(...)      (_debugLevel < 1) ? : ::printf(GRE), ::printf(__VA_ARGS__), ::printf(DEF)
-  #define TRACE(...)     (_debugLevel < 2) ? : ::printf(__VA_ARGS__)
+void MDMParser::_debugPrint(int level, const char* color, const char* format, ...)
+{
+  if (_debugLevel >= level)
+  {
+    ::printf("_debugPrint %d %d\r\n", _debugLevel, level);
+    va_list args;
+    va_start (args, format);
+    if (color) ::printf(color);
+    ::vprintf(format, args);
+    if (color) ::printf(DEF);
+    va_end (args);
+  }
+}
+
+#define ERROR(...)     _debugPrint(0, RED, __VA_ARGS__)
+#define INFO(...)      _debugPrint(1, GRE, __VA_ARGS__)
+#define TRACE(...)     _debugPrint(2, DEF, __VA_ARGS__)
+#define TEST(...)      _debugPrint(3, CYA, __VA_ARGS__)
 
 #else
 
@@ -1384,7 +1398,8 @@ int MDMParser::_cbURDFILE(int type, const char* buf, int len, URDFILEparam* para
 bool MDMParser::setDebug(int level)
 {
 #ifdef MDM_DEBUG
-  if ((_debugLevel >= 0) && (level >= 0)) {
+  if ((_debugLevel >= -1) && (level >= -1) &&
+      (_debugLevel <=  3) && (level <=  3)) {
     _debugLevel = level;
     return true;
   }
