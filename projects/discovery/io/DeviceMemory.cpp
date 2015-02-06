@@ -28,7 +28,7 @@ bool DeviceMemory::savePlatformCredentials(char *username, char *password, size_
   char buffer[len*2+3]; int res;
 
   res = snprintf(buffer, sizeof(buffer), "%s\n%s\n", username, password);
-  if ((res < 0) || (res >= sizeof(buffer)))
+  if ((res < 0) || (res >= (int)sizeof(buffer)))
     return false;
 
   resetPlatformCredentials();
@@ -59,7 +59,7 @@ bool DeviceMemory::saveConfiguration(char *cfg)
   len = strlen(cfg);
 
   resetConfiguration();
-  return (_mdm.writeFile(CONFIGURATION_FILE, cfg, len) == len);
+  return (_mdm.writeFile(CONFIGURATION_FILE, cfg, len) == (int)len);
 }
 
 bool DeviceMemory::resetConfiguration()

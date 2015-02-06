@@ -35,59 +35,63 @@
 
 #include "mbed.h"
 
-enum eType{
-        DHT11     = 11,
-        SEN11301P = 11,
-        RHT01     = 11,
-        DHT22     = 22,
-        AM2302    = 22,
-        SEN51035P = 22,
-        RHT02     = 22,
-        RHT03     = 22
-    } ;
+enum eType {
+    DHT11     = 11,
+    SEN11301P = 11,
+    RHT01     = 11,
+    DHT22     = 22,
+    AM2302    = 22,
+    SEN51035P = 22,
+    RHT02     = 22,
+    RHT03     = 22
+};
+typedef enum eType eType;
 
 enum eError {
     ERROR_NONE = 0,
-    BUS_BUSY =1,
-    ERROR_NOT_PRESENT =2 ,
-    ERROR_ACK_TOO_LONG =3 ,
-    ERROR_SYNC_TIMEOUT = 4,
-    ERROR_DATA_TIMEOUT =5 ,
-    ERROR_CHECKSUM = 6,
-    ERROR_NO_PATIENCE =7
-} ;
+    BUS_BUSY,
+    ERROR_NOT_PRESENT,
+    ERROR_ACK_TOO_LONG,
+    ERROR_SYNC_TIMEOUT,
+    ERROR_DATA_TIMEOUT,
+    ERROR_CHECKSUM,
+    ERROR_NO_PATIENCE
+};
+typedef enum eError eError;
 
-typedef enum {
-    CELCIUS =0 ,
-    FARENHEIT =1,
-    KELVIN=2
-} eScale;
+enum eScale {
+    CELCIUS = 0,
+    FARENHEIT,
+    KELVIN
+};
+typedef enum eScale eScale;
 
-
-class DHT {
+class DHT
+{
 
 public:
 
-    DHT(PinName pin,int DHTtype);
+    DHT(PinName pin, eType DHTtype);
     ~DHT();
-    int readData(void);
+    eError readData(void);
     float ReadHumidity(void);
-    float ReadTemperature(eScale Scale);
-    float CalcdewPoint(float celsius, float humidity);
-    float CalcdewPointFast(float celsius, float humidity);
+    float ReadTemperature(eScale const Scale);
+    float CalcdewPoint(float const celsius, float const humidity);
+    float CalcdewPointFast(float const celsius, float const humidity);
 
 private:
-    time_t _lastReadTime;
+    time_t  _lastReadTime;
     float _lastTemperature;
     float _lastHumidity;
     PinName _pin;
     bool _firsttime;
-    int _DHTtype;
-    int DHT_data[6];
+    eType _DHTtype;
+    uint8_t DHT_data[5];
     float CalcTemperature();
     float CalcHumidity();
-    float ConvertCelciustoFarenheit(float);
-    float ConvertCelciustoKelvin(float);
+    float ConvertCelciustoFarenheit(float const);
+    float ConvertCelciustoKelvin(float const);
+    eError stall(DigitalInOut &io, int const level, int const max_time);
 
 };
 

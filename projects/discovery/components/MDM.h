@@ -6,16 +6,8 @@
 #include "Pipe.h"
 #include "SerialPipe.h"
 
-#ifdef TARGET_UBLOX_C027
-  #define MDM_IF(onboard,shield) onboard
-#else
-  #define MDM_IF(onboard,shield) shield
-#endif
-
 //! include debug capabilty on more powerful targets with a dedicated debug port
-#if defined(TARGET_LPC1768) || defined(TARGET_LPC4088) || defined(TARGET_K64F) || defined(TARGET_DISCO_L053C8)
-  #define MDM_DEBUG
-#endif
+#define MDM_DEBUG
 
 /** basic modem parser class
 */
@@ -98,7 +90,7 @@ public:
   bool connect(const char* simpin = NULL,
   const char* apn = NULL, const char* username = NULL,
   const char* password = NULL, Auth auth = AUTH_DETECT,
-  PinName pn MDM_IF( = MDMPWRON, = D4));
+  PinName pn = PB_0);
 
   /** register (Attach) the MT to the GPRS service.
    *  \param simpin a optional pin of the SIM card
@@ -106,7 +98,7 @@ public:
    *  \return true if successful, false otherwise
    */
   bool init(const char* simpin = NULL, DevStatus* status = NULL,
-  PinName pn MDM_IF( = MDMPWRON, = D4));
+  PinName pn = PB_0);
 
   /** register to the network
    *  \param status an optional structure to with network information
@@ -552,9 +544,6 @@ protected:
   int _findSocket(int handle = SOCKET_ERROR/* = CREATE*/);
   static MDMParser* inst;
   bool _init;
-#ifdef TARGET_UBLOX_C027
-  bool _onboard;
-#endif
 #ifdef MDM_DEBUG
   int _debugLevel;
   Timer _debugTime;
@@ -582,12 +571,12 @@ public:
    *  \param rxSize the size of the serial rx buffer
    *  \param txSize the size of the serial tx buffer
    */
-  MDMSerial(PinName tx    MDM_IF( = MDMTXD,  = PA_2 ),
-            PinName rx    MDM_IF( = MDMRXD,  = PA_3 ),
-            int baudrate  MDM_IF( = MDMBAUD, = 115200 ),
+  MDMSerial(PinName tx = PA_2,
+            PinName rx = PA_3,
+            int baudrate = 115200,
 #if DEVICE_SERIAL_FC
-            PinName rts   MDM_IF( = MDMRTS,  = NC /* D2 resistor R62 on shield not mounted */ ),
-            PinName cts   MDM_IF( = MDMCTS,  = NC /* D3 resistor R63 on shield not mounted */ ),
+            PinName rts = NC /* D2 resistor R62 on shield not mounted */,
+            PinName cts = NC /* D3 resistor R63 on shield not mounted */,
 #endif
             int rxSize    = 256 ,
             int txSize    = 128 );

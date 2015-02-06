@@ -1,14 +1,11 @@
 #include "mbed.h"
 #include "MDM.h"
-#ifdef TARGET_UBLOX_C027
-  #include "C027_api.h"
-#endif
 #include "MDMAPN.h"
 
 #define PROFILE         "0"   //!< this is the psd profile used
 #define MAX_SIZE        128   //!< max expected messages
 // num sockets
-#define NUMSOCKETS      (sizeof(_sockets)/sizeof(*_sockets))
+#define NUMSOCKETS      (int)(sizeof(_sockets)/sizeof(*_sockets))
 //! test if it is a socket is ok to use
 #define ISSOCKET(s)     (((s) >= 0) && ((s) < NUMSOCKETS) && (_sockets[s].handle != SOCKET_ERROR))
 //! check for timeout
@@ -229,8 +226,8 @@ int MDMParser::waitFinalResp(_CALLBACKPTR cb /* = NULL*/,
                 else if (a == 3) *reg = REG_DENIED;   // 3: registration denied
                 else if (a == 4) *reg = REG_UNKNOWN;  // 4: unknown
                 else if (a == 5) *reg = REG_ROAMING;  // 5: registered, roaming
-                if ((r >= 3) && (b != 0xFFFF))      _net.lac = b; // location area code
-                if ((r >= 4) && (c != 0xFFFFFFFF))  _net.ci  = c; // cell ID
+                if ((r >= 3) && (b != 0xFFFF))                _net.lac = b; // location area code
+                if ((r >= 4) && ((unsigned)c != 0xFFFFFFFF))  _net.ci  = c; // cell ID
                 // access technology
                 if (r >= 5) {
                   if      (d == 0) _net.act = ACT_GSM;      // 0: GSM
@@ -683,7 +680,7 @@ int MDMParser::_cbCSQ(int type, const char* buf, int len, NetStatus* status)
     // +CSQ: <rssi>,<qual>
     if (sscanf(buf, "\r\n+CSQ: %d,%d",&a,&b) == 2) {
       if (a != 99) status->rssi = -113 + 2*a;  // 0: -113 1: -111 ... 30: -53 dBm with 2 dBm steps
-      if ((b != 99) && (b < sizeof(_ber))) status->ber = _ber[b];  //
+      if ((b != 99) && (b < (int)sizeof(_ber))) status->ber = _ber[b];  //
     }
   }
   return WAIT;
@@ -1475,19 +1472,19 @@ int MDMParser::_parseMatch(Pipe<char>* pipe, int len, const char* sta, const cha
   int o = 0;
   if (sta) {
     while (*sta) {
-      if (++o > len)                  return WAIT;
+      if (++o > len)      return WAIT;
       char ch = pipe->next();
-      if (*sta++ != ch)               return NOT_FOUND;
+      if (*sta++ != ch)   return NOT_FOUND;
     }
   }
-  if (!end)                               return o; // no termination
+  if (!end)               return o; // no termination
   // at least any char
-  if (++o > len)                      return WAIT;
+  if (++o > len)          return WAIT;
   pipe->next();
   // check the end
   int x = 0;
   while (end[x]) {
-    if (++o > len)                      return WAIT;
+    if (++o > len)        return WAIT;
     char ch = pipe->next();
     x = (end[x] == ch) ? x + 1 :
         (end[0] == ch) ? 1 :
@@ -1502,7 +1499,7 @@ int MDMParser::_parseFormated(Pipe<char>* pipe, int len, const char* fmt)
   int num = 0;
   if (fmt) {
     while (*fmt) {
-      if (++o > len)                  return WAIT;
+      if (++o > len)            return WAIT;
       char ch = pipe->next();
       if (*fmt == '%') {
         fmt++;
@@ -1524,16 +1521,16 @@ int MDMParser::_parseFormated(Pipe<char>* pipe, int len, const char* fmt)
         }
         else if (*fmt == 's') {
           fmt ++;
-          if (ch != '\"')         return NOT_FOUND;
+          if (ch != '\"')       return NOT_FOUND;
           do {
             if (++o > len)      return WAIT;
             ch = pipe->next();
           } while (ch != '\"');
-          if (++o > len)          return WAIT;
+          if (++o > len)        return WAIT;
           ch = pipe->next();
         }
       }
-      if (*fmt++ != ch)               return NOT_FOUND;
+      if (*fmt++ != ch)         return NOT_FOUND;
     }
   }
   return o;
@@ -1573,7 +1570,7 @@ int MDMParser::_getLine(Pipe<char>* pipe, char* buf, int len)
       { "\r\n>",                  NULL,               TYPE_PROMPT     }, // SMS
       { "\n>",                    NULL,               TYPE_PROMPT     }, // File
     };
-    for (int i = 0; i < sizeof(lutF)/sizeof(*lutF); i ++) {
+    for (uint i = 0; i < sizeof(lutF)/sizeof(*lutF); i ++) {
       pipe->set(unkn);
       int ln = _parseFormated(pipe, len, lutF[i].fmt);
       if (ln == WAIT && fr)
@@ -1583,7 +1580,7 @@ int MDMParser::_getLine(Pipe<char>* pipe, char* buf, int len)
       if (ln > 0)
         return lutF[i].type  | pipe->get(buf, ln);
     }
-    for (int i = 0; i < sizeof(lut)/sizeof(*lut); i ++) {
+    for (uint i = 0; i < sizeof(lut)/sizeof(*lut); i ++) {
       pipe->set(unkn);
       int ln = _parseMatch(pipe, len, lut[i].sta, lut[i].end);
       if (ln == WAIT && fr)
@@ -1639,11 +1636,7 @@ MDMSerial::MDMSerial(PinName tx /*= MDMTXD*/, PinName rx /*= MDMRXD*/,
   _debugLevel = -1;
 #endif
 }
-#ifdef TARGET_UBLOX_C027
-  _onboard = (tx == MDMTXD) && (rx == MDMRXD);
-  if (_onboard)
-    c027_mdm_powerOn(false);
-#endif
+  //c027_mdm_powerOn(false);
   baud(baudrate);
 #if DEVICE_SERIAL_FC
   if ((rts != NC) || (cts != NC))
@@ -1659,10 +1652,7 @@ MDMSerial::MDMSerial(PinName tx /*= MDMTXD*/, PinName rx /*= MDMRXD*/,
 MDMSerial::~MDMSerial(void)
 {
   powerOff();
-#ifdef TARGET_UBLOX_C027
-  if (_onboard)
-    c027_mdm_powerOff();
-#endif
+  //c027_mdm_powerOff();
 }
 
 int MDMSerial::_send(const void* buf, int len)
@@ -1685,19 +1675,13 @@ MDMUsb::MDMUsb(void)
 #ifdef MDM_DEBUG
   _debugLevel = 1;
 #endif
-#ifdef TARGET_UBLOX_C027
-  _onboard = true;
-  c027_mdm_powerOn(true);
-#endif
+  //c027_mdm_powerOn(true);
 }
 
 MDMUsb::~MDMUsb(void)
 {
   powerOff();
-#ifdef TARGET_UBLOX_C027
-  if (_onboard)
-    c027_mdm_powerOff();
-#endif
+  //c027_mdm_powerOff();
 }
 
 int MDMUsb::_send(const void* buf, int len)      { return 0; }
